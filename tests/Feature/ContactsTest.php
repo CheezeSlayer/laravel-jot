@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Contact;
+use App\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -11,12 +12,42 @@ use Tests\TestCase;
 class ContactsTest extends TestCase
 {
     use RefreshDatabase;
-    /** @test */
-    public function a_contact_can_be_added()
-    {
-        // $this->withoutExceptionHandling(); // This command will allow test to fail when encountering an undefined route.  
-        $this->post('/api/contacts', $this->data());
 
+    protected $user;
+
+    protected function setUp(): void {
+        parent::setUp();
+
+        $this->user = factory(User::class)->create(); 
+    }
+
+
+    /** @test */
+    public function a_list_of_contacts_can_be_fetched_for_the_authenticated_user() {
+        $user = factory(User::class)->create();
+        $anotherUser = factory(User::class)->create();
+
+        $contact = factory(Contact::class)->create(['user_id' => $user->id]);
+        $anotherContact = factory(Contact::class)->create(['user_id' => $anotherUser->id]);
+
+        $response = $this->get('/api/contacts?api_token=' . $user->api_token); 
+
+        $response->assertJsonCount(1)->assertJson([['id' => $contact->id]]);
+    }
+
+    /** @test */
+    public function an_unauthenticated_user_should_redirected_to_login() {
+        $response = $this->post('/api/contacts', array_merge($this->data(), ['api_token' => '']));
+
+        $response->assertRedirect('/login');
+        $this->assertCount(0, Contact::all());
+    }
+
+    /** @test */
+    public function an_authenticated_user_can_add_a_contact()
+    {
+        $this->withoutExceptionHandling(); // This command will allow test to fail when encountering an undefined route.  
+        $this->post('/api/contacts', $this->data());
         $contact = Contact::first();
 
         $this->assertEquals( 'Test Name', $contact->name);
@@ -59,9 +90,9 @@ class ContactsTest extends TestCase
 
     /** @test */
     public function a_contact_can_be_retrieved() {
-        $this->withoutExceptionHandling();
-        $contact = factory(Contact::class)->create();
-        $response = $this->get('/api/contacts/' . $contact->id);
+        // $this->withoutExceptionHandling();
+        $contact = factory(Contact::class)->create(['user_id' => $this->user->id]);
+        $response = $this->get('/api/contacts/' . $contact->id . '?api_token=' . $this->user->api_token);
 
         $response->assertJson([
             'name' => $contact->name,
@@ -72,11 +103,21 @@ class ContactsTest extends TestCase
     }
 
     /** @test */
-    public function a_contact_can_be_patched() {
-        $this->withoutExceptionHandling();
-        $contact = factory(Contact::class)->create();
-        $response = $this->patch('/api/contacts/' . $contact->id, $this->data());
+    public function only_the_users_contacts_can_be_retrieved() {
+        $contact = factory(Contact::class)->create(['user_id' => $this->user->id]);
+        $anotherUser = factory(User::class)->create();
 
+        $response = $this->get('/api/contacts/' . $contact->id . '?api_token=' . $anotherUser->api_token);
+
+        $response->assertStatus(403);
+        
+    }
+
+    /** @test */
+    public function a_contact_can_be_patched() {
+        // $this->withoutExceptionHandling();
+        $contact = factory(Contact::class)->create(['user_id' => $this->user->id]);
+        $response = $this->patch('/api/contacts/' . $contact->id, $this->data());
         // contact has been cached in first line of this test.  Need to refresh it so that it grabs updated data
         $contact = $contact->fresh();
 
@@ -88,12 +129,32 @@ class ContactsTest extends TestCase
     }
 
     /** @test */
-    public function a_contact_can_be_deleted() {
+    public function only_the_owner_of_the_contact_can_be_patched() {
         $contact = factory(Contact::class)->create();
+        $anotherUser = factory(User::class)->create();
 
-        $response = $this->delete('/api/contacts/' . $contact->id);
+        $response = $this->patch('/api/contacts/' . $contact->id, array_merge($this->data(), ['api_token' => $anotherUser->api_token]));
+
+        $response->assertStatus(403);
+    }
+
+    /** @test */
+    public function a_contact_can_be_deleted() {
+        $contact = factory(Contact::class)->create(['user_id' => $this->user->id]);
+
+        $response = $this->delete('/api/contacts/' . $contact->id, ['api_token' => $this->user->api_token]);
 
         $this->assertCount(0, Contact::all());
+    }
+
+    /** @test */
+    public function only_the_owner_can_delete_the_contact() {
+        $contact = factory(Contact::class)->create();
+        $anotherUser = factory(User::class)->create();
+
+        $response = $this->delete('/api/contacts/' . $contact->id, ['api_token' => $anotherUser->api_token]);
+
+        $response->assertStatus(403);
     }
 
     private function data() {
@@ -101,7 +162,8 @@ class ContactsTest extends TestCase
             'name' => 'Test Name',
             'email' => 'test@email.com',
             'birthday' => '05/14/1998',
-            'company' => 'ABC String',            
+            'company' => 'ABC String',
+            'api_token' => $this->user->api_token,
         ];
     }
 }
