@@ -17,7 +17,7 @@
 
                     <p class="pt-12 text-gray-500 text-xs uppercase font-bold">Create</p>
 
-                    <router-link to="/" class="flex items-center py-2">
+                    <router-link to="/contacts/create" class="flex items-center py-2">
                         <svg viewBox="0 0 24 24" class="fill-current text-blue-600 w-5 h-5">
                             <path d="M23.3 11.9c0 .9-.6 1.4-1.4 1.4h-8.5v8.5c0 .9-.6 1.4-1.4 
                             1.4s-1.4-.6-1.4-1.4v-8.5H2c-.9 0-1.4-.6-1.4-1.4 0-.9.6-1.4 
@@ -78,9 +78,7 @@
                     <div>
                         Contacts
                     </div>
-                    <div class="rounded-full border border-gray-400 bg-blue-400 text-white w-10 h-10 flex justify-center items-center">
-                        VG
-                    </div>
+                    <UserCircle :name="user.name"></UserCircle>
                 </div>
                 <div class="flex flex-col overflow-y-hidden flex-1">
                     <router-view class="p-6 overflow-x-hidden"></router-view>
@@ -92,8 +90,35 @@
 
 
 <script>
+import UserCircle from './UserCircle';
+
 export default {
-    
+    name: "App",
+
+    props: [
+        'user'
+    ],
+
+    components: {
+        UserCircle,
+    },
+
+    created() {
+        window.axios.interceptors.request.use(
+            (config) => {
+                if(config.method == 'get') {
+                    config.url = config.url + '?api_token=' + this.user.api_token;
+                } else {
+                    config.data = {
+                    ...config.data,
+                    api_token: this.user.api_token
+                    }
+                }
+                
+                return config
+            }
+        )
+    }
 }
 </script>
 

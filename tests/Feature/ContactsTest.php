@@ -36,8 +36,8 @@ class ContactsTest extends TestCase
         $response->assertJsonCount(1)->assertJson([
             'data' => [
                 [
-                    'data' => [
-                        ['contact_id' => $contact->id]
+                    'data'=> [
+                        'contact_id' => $contact->id
                     ]
                 ]
             ]
