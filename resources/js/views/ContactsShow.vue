@@ -3,13 +3,23 @@
         <div v-if="loading">...Loading</div>
         <div v-else>
             <div class="flex justify-between">
-                <div class="text-blue-400">
+                <a href="#" class="text-blue-400" v-on:click="$router.back()">
                     < Back
-                </div>
-                <div>
-                    <router-link :to="'/contact/' + contact.contact_id + '/edit'" 
+                </a>
+                <div class="relative">
+                    <router-link :to="'/contacts/' + contact.contact_id + '/edit'" 
                     class="px-4 py-2 rounded text-sm text-green-500 font-bold border border-green-500 mr-2">Edit</router-link>
-                    <a href="#" class="px-4 py-2 border border-red-500 rounded text-sm font-bold text-red-500">Delete</a>
+                    <a href="#" class="px-4 py-2 border border-red-500 rounded text-sm font-bold text-red-500" v-on:click="modal = !modal">Delete</a>
+
+                    <div v-if="modal" class="absolute bg-blue-900 text-white rounded-lg z-20 p-8 w-64 right-0 mt-2 mr-6">
+                        <p>Are you sure you want to delete this record?</p>
+                        <div class="flex items-cener mt-6 justify-end">
+                            <button class="text-white pr-4" v-on:click="modal = !modal">Cancel</button>
+                            <button class="px-4 py-2 bg-red-500 rounded text-sm font-bold text-white" v-on:click="destroy()">Delete</button>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="modal" class="bg-black opacity-25 absolute right-0 left-0 top-0 bottom-0 z-10" v-on:click="modal = !modal">
                 </div>
             </div>
 
@@ -50,13 +60,31 @@ export default {
             })
             .catch(error => {
                 this.loading = false;
+
+                if(error.response.status === 404) {
+                    this.$router.push('/contacts');
+                }
             });
     },
 
     data: function() {
         return {
             loading: true,
+            modal: false,
             contact: null
+        }
+    },
+
+    methods: {
+        destroy: function() {
+            axios.delete('/api/contacts/' + this.$route.params.id)
+                .then(response => {
+                    this.$router.push('/contacts');
+                })
+                .catch(error => {
+                    console.log(error);
+                    alert('Internal Error.  Unable to delete contact.')
+                })
         }
     }
 }

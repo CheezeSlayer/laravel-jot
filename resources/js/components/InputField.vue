@@ -14,7 +14,7 @@ export default {
     name: 'InputField',
 
     props: [
-        'name', 'label', 'placeholder', 'errors'
+        'name', 'label', 'placeholder', 'errors', 'data'
     ],
 
     data: function() {
@@ -33,7 +33,7 @@ export default {
     methods: {
         updateField: function () {
             this.clearErrors(this.name)
-            // this event, update:field will me emitted if this.value, bound to input, changes
+            // this event, update:field will be emitted if this.value, bound to input, changes
             this.$emit('update:field', this.value)
         },
 
@@ -53,6 +53,12 @@ export default {
             return { // only apply styles if return true
                 'error-field': this.hasError
             }
+        },
+    },
+
+    watch: {
+        data: function(val) {
+            this.value = val;
         }
     }
 }
