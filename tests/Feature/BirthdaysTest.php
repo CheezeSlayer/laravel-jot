@@ -5,12 +5,16 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
+use App\User;
+use App\Contact;
 
 class BirthdaysTest extends TestCase
 {
     use RefreshDatabase;
 
+    /** @test */
     public function contacts_with_birthdays_in_the_current_month_can_be_fetched() {
+        $this->withoutExceptionHandling();
         $user = factory(User::class)->create();
 
         $birthdayContacts = factory(Contact::class)->create([
@@ -23,8 +27,8 @@ class BirthdaysTest extends TestCase
             'birthday' => now()->subMonth(),
         ]);
 
-        $this->get('/api/birthdays')
-            ->assertJsonCount(1)
+        $this->get('/api/birthdays?api_token=' . $user->api_token)
+            ->assertJsonCount(1) 
             ->assertJson([
                 'data' => [
                     [

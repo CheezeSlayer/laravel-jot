@@ -44,7 +44,7 @@
                         <div class="tracking-wide pl-3 hover:text-blue-600 text-sm">Contacts</div>
                     </router-link>
 
-                    <router-link to="/" class="flex items-center py-2">
+                    <router-link to="/birthdays" class="flex items-center py-2">
                         <svg viewBox="0 0 24 24" class="fill-current text-blue-600 w-5 h-5">
                             <path fill-rule="evenodd" d="M12.1 6.8c1.2 0 2.1-1 2.1-2.1 
                             0-.4-.1-.8-.3-1.1L12.1.5l-1.8 3.1c-.2.3-.3.6-.3 1 0 1.2 1 
@@ -60,7 +60,7 @@
 
                     <p class="pt-12 text-gray-500 text-xs uppercase font-bold">Settings</p>
 
-                    <router-link to="/" class="flex items-center py-2">
+                    <router-link to="/logout" class="flex items-center py-2">
                         <svg viewBox="0 0 24 24" class="fill-current text-blue-600 w-5 h-5">
                             <path d="M21 3h-3.8c-.7 0-1.3-.6-1.3-1.3S16.5.4 17.2.4h5.1c.7 0 
                             1.3.6 1.3 1.3v20.5c0 .7-.6 1.3-1.3 1.3h-5.1c-.7 0-1.3-.6-1.3-1.3 
@@ -76,9 +76,13 @@
             <div class="flex flex-col flex-1 h-screen overflow-y-hidden">
                 <div class="h-16 p-6 border-b border-gray-400 flex items-center justify-between">
                     <div>
-                        Contacts
+                        {{ title }}
                     </div>
-                    <UserCircle :name="user.name"></UserCircle>
+
+                    <div class="flex items-center">
+                        <SearchBar></SearchBar>
+                        <UserCircle :name="user.name"></UserCircle>
+                    </div>
                 </div>
                 <div class="flex flex-col overflow-y-hidden flex-1">
                     <router-view class="p-6 overflow-x-hidden"></router-view>
@@ -91,9 +95,26 @@
 
 <script>
 import UserCircle from './UserCircle';
+import SearchBar from './SearchBar';
 
 export default {
     name: "App",
+
+    data: function () {
+        return {
+            title: '',
+        }
+    },
+
+    watch: {
+        $route(to, from) {
+            this.title = to.meta.title;
+        },
+
+        title() {
+            document.title = this.title + ' | Jot - The SPA App '
+        }
+    },
 
     props: [
         'user'
@@ -101,9 +122,12 @@ export default {
 
     components: {
         UserCircle,
+        SearchBar
     },
 
     created() {
+        this.title = this.$route.meta.title;
+
         window.axios.interceptors.request.use(
             (config) => {
                 if(config.method == 'get') {
